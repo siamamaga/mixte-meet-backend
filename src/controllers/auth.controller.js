@@ -1,6 +1,7 @@
 // src/controllers/auth.controller.js
 const { validationResult } = require('express-validator');
-const authService = require('../services/auth.service');
+const authService  = require('../services/auth.service');
+const emailService = require('../services/email.service');
 
 function handleError(res, err) {
   const status  = err.status  || 500;
@@ -14,6 +15,13 @@ async function register(req, res) {
   if (!errors.isEmpty()) return res.status(422).json({ success: false, errors: errors.array() });
   try {
     const data = await authService.register(req.body);
+
+    // Email de bienvenue (async)
+    emailService.sendWelcome({
+      to:        req.body.email,
+      firstName: req.body.first_name || 'cher(e) membre',
+    }).catch(err => console.error('Email bienvenue:', err.message));
+
     return res.status(201).json({ success: true, message: 'Compte créé avec succès', data });
   } catch (err) { handleError(res, err); }
 }
@@ -38,6 +46,21 @@ async function refresh(req, res) {
   } catch (err) { handleError(res, err); }
 }
 
+// POST /api/auth/forgot-password
+async function forgotPassword(req, res) {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ success: false, message: 'Email requis' });
+  try {
+    const resetToken = require('crypto').randomBytes(32).toString('hex');
+    await emailService.sendPasswordReset({
+      to:         email,
+      firstName:  'cher(e) membre',
+      resetToken,
+    });
+    return res.json({ success: true, message: 'Email de réinitialisation envoyé' });
+  } catch (err) { handleError(res, err); }
+}
+
 // POST /api/auth/change-password
 async function changePassword(req, res) {
   try {
@@ -48,8 +71,7 @@ async function changePassword(req, res) {
 
 // POST /api/auth/logout
 async function logout(req, res) {
-  // Côté client : supprimer les tokens du stockage local
   return res.json({ success: true, message: 'Déconnexion réussie' });
 }
 
-module.exports = { register, login, refresh, changePassword, logout };
+module.exports = { register, login, refresh, changePassword, logout, forgotPassword };
