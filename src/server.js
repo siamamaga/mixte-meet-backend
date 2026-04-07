@@ -13,6 +13,7 @@ const routes          = require('./routes/index');
 const { initSocket }  = require('./sockets/chat.socket');
 
 const app    = express();
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 
 // ── Socket.io ─────────────────────────────────────────────
