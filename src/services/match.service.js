@@ -33,7 +33,7 @@ async function getFeed(userId, filters = {}) {
       TIMESTAMPDIFF(YEAR, u.birthdate, CURDATE()) AS age,
       u.country_code, u.country_name, u.city, u.continent,
       u.bio, u.profession, u.is_verified, u.last_active_at,
-      (SELECT url FROM user_photos WHERE user_id = u.id AND is_main = TRUE LIMIT 1) AS main_photo,
+      (SELECT url FROM user_photos WHERE user_id = u.id AND is_main = 1 LIMIT 1) AS main_photo,
       (SELECT COUNT(*) FROM user_photos WHERE user_id = u.id) AS photos_count,
       'real' AS profile_type
     FROM users u
@@ -161,7 +161,7 @@ async function getMatches(userId) {
       u.uuid, u.first_name, u.is_verified, u.last_active_at,
       TIMESTAMPDIFF(YEAR, u.birthdate, CURDATE()) AS age,
       u.country_code, u.city,
-      (SELECT url FROM user_photos WHERE user_id = u.id AND is_main = TRUE LIMIT 1) AS main_photo,
+      (SELECT url FROM user_photos WHERE user_id = u.id AND is_main = 1 LIMIT 1) AS main_photo,
       (SELECT content FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) AS last_message,
       (SELECT created_at FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) AS last_message_at,
       (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id AND sender_id != ? AND is_read = FALSE) AS unread_count,
