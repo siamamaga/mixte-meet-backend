@@ -168,6 +168,17 @@ async function moderatePhoto(req, res) {
   } catch(err) { handleError(res, err); }
 }
 
+// ── PHOTOS D'UN USER ─────────────────────────────────────
+async function getUserPhotos(req, res) {
+  try {
+    const [rows] = await pool.query(
+      'SELECT id, url, url_thumb, is_main, is_verified, created_at FROM user_photos WHERE user_id = ? ORDER BY is_main DESC, created_at ASC',
+      [req.params.id]
+    ).catch(() => [[]]);
+    return res.json({ success: true, data: rows });
+  } catch(err) { return res.json({ success: true, data: [] }); }
+}
+
 // ── PAIEMENTS ─────────────────────────────────────────────
 async function getPayments(req, res) {
   try {
@@ -381,7 +392,7 @@ async function getCountryStats(req, res) {
 }
 
 module.exports = {
-  getDashboard, getUsers, getUserById, banUser, unbanUser, deleteUser, grantPremium,
+  getDashboard, getUsers, getUserById, getUserPhotos, banUser, unbanUser, deleteUser, grantPremium,
   getReports, handleReport,
   getPendingPhotos, moderatePhoto,
   getPayments, getSubscriptions,

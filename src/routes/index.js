@@ -89,6 +89,7 @@ router.put('/admin/photos/:id',     authMiddleware, adminOnly, adminCtrl.moderat
 
 // Membres
 router.get('/admin/users/:id',          authMiddleware, adminOnly, adminCtrl.getUserById);
+router.get('/admin/users/:id/photos',   authMiddleware, adminOnly, adminCtrl.getUserPhotos);
 router.put('/admin/users/:id/premium',  authMiddleware, adminOnly, adminCtrl.grantPremium);
 router.put('/admin/users/:id/unban',    authMiddleware, adminOnly, adminCtrl.unbanUser);
 router.delete('/admin/users/:id',       authMiddleware, adminOnly, adminCtrl.deleteUser);
