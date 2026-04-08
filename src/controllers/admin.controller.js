@@ -129,7 +129,7 @@ async function getReports(req, res) {
         u2.first_name as reported_name, u2.email as reported_email
       FROM reports r
       LEFT JOIN users u1 ON r.reporter_id = u1.id
-      LEFT JOIN users u2 ON r.reported_id = u2.id
+      LEFT JOIN users u2 ON r.reported_user_id = u2.id
       WHERE r.status = 'pending'
       ORDER BY r.created_at DESC LIMIT 50
     `);
