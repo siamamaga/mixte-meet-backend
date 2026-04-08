@@ -33,28 +33,29 @@ router.post('/auth/login',            authValidators,     authCtrl.login);
 router.post('/auth/refresh',                              authCtrl.refresh);
 router.post('/auth/logout',           authMiddleware,     authCtrl.logout);
 router.put ('/auth/change-password',  authMiddleware,     authCtrl.changePassword);
+router.post('/auth/forgot-password',                      authCtrl.forgotPassword);
 
 // ════════════════════════════════════════════════
 // 👤 PROFIL
 // ════════════════════════════════════════════════
-router.get ('/me',                  authMiddleware, userCtrl.getMyProfile);
-router.put ('/me',                  authMiddleware, userCtrl.updateProfile);
-router.get ('/users/:uuid',         authMiddleware, userCtrl.getProfile);
+router.get ('/me',                   authMiddleware, userCtrl.getMyProfile);
+router.put ('/me',                   authMiddleware, userCtrl.updateProfile);
+router.get ('/users/:uuid',          authMiddleware, userCtrl.getProfile);
 
 // Photos
-router.get   ('/me/photos',         authMiddleware,                      userCtrl.getPhotos);
-router.post  ('/me/photos',         authMiddleware, upload.single('photo'), userCtrl.uploadPhoto);
-router.put   ('/me/photos/:id/main',authMiddleware,                      userCtrl.setMainPhoto);
-router.delete('/me/photos/:id',     authMiddleware,                      userCtrl.deletePhoto);
+router.get   ('/me/photos',          authMiddleware,                        userCtrl.getPhotos);
+router.post  ('/me/photos',          authMiddleware, upload.single('photo'), userCtrl.uploadPhoto);
+router.put   ('/me/photos/:id/main', authMiddleware,                        userCtrl.setMainPhoto);
+router.delete('/me/photos/:id',      authMiddleware,                        userCtrl.deletePhoto);
 
 // ════════════════════════════════════════════════
 // 💘 MATCHING
 // ════════════════════════════════════════════════
-router.get('/feed',             authMiddleware, matchCtrl.getFeed);
-router.post('/swipe',           authMiddleware, matchCtrl.swipe);
-router.post('/undo',            authMiddleware, premiumOnly, matchCtrl.undoLastSwipe);
-router.get ('/matches',         authMiddleware, matchCtrl.getMatches);
-router.delete('/matches/:id',   authMiddleware, matchCtrl.unmatch);
+router.get   ('/feed',           authMiddleware,              matchCtrl.getFeed);
+router.post  ('/swipe',          authMiddleware,              matchCtrl.swipe);
+router.post  ('/undo',           authMiddleware, premiumOnly, matchCtrl.undoLastSwipe);
+router.get   ('/matches',        authMiddleware,              matchCtrl.getMatches);
+router.delete('/matches/:id',    authMiddleware,              matchCtrl.unmatch);
 
 // ════════════════════════════════════════════════
 // 💬 MESSAGERIE
@@ -67,22 +68,69 @@ router.post  ('/messages/:id/react',         authMiddleware, msgCtrl.addReaction
 // ════════════════════════════════════════════════
 // 🛡️ SIGNALEMENT / BLOCAGE
 // ════════════════════════════════════════════════
-router.post('/report', authMiddleware, userCtrl.report);
-router.post('/block',  authMiddleware, userCtrl.block);
-router.delete('/block/:uuid', authMiddleware, userCtrl.unblock);
+router.post  ('/report',       authMiddleware, userCtrl.report);
+router.post  ('/block',        authMiddleware, userCtrl.block);
+router.delete('/block/:uuid',  authMiddleware, userCtrl.unblock);
 
 // ════════════════════════════════════════════════
-// ⚙️ ADMIN
+// ⚙️ ADMIN — Routes existantes
 // ════════════════════════════════════════════════
-router.get   ('/admin/dashboard',     authMiddleware, adminOnly, adminCtrl.getDashboard);
-router.get   ('/admin/users',         authMiddleware, adminOnly, adminCtrl.getUsers);
-router.put   ('/admin/users/:id/ban', authMiddleware, adminOnly, adminCtrl.banUser);
-router.get   ('/admin/reports',       authMiddleware, adminOnly, adminCtrl.getReports);
-router.put   ('/admin/reports/:id',   authMiddleware, adminOnly, adminCtrl.handleReport);
-router.get   ('/admin/photos/pending',authMiddleware, adminOnly, adminCtrl.getPendingPhotos);
-router.put   ('/admin/photos/:id',    authMiddleware, adminOnly, adminCtrl.moderatePhoto);
+router.get('/admin/dashboard',      authMiddleware, adminOnly, adminCtrl.getDashboard);
+router.get('/admin/users',          authMiddleware, adminOnly, adminCtrl.getUsers);
+router.put('/admin/users/:id/ban',  authMiddleware, adminOnly, adminCtrl.banUser);
+router.get('/admin/reports',        authMiddleware, adminOnly, adminCtrl.getReports);
+router.put('/admin/reports/:id',    authMiddleware, adminOnly, adminCtrl.handleReport);
+router.get('/admin/photos/pending', authMiddleware, adminOnly, adminCtrl.getPendingPhotos);
+router.put('/admin/photos/:id',     authMiddleware, adminOnly, adminCtrl.moderatePhoto);
 
-// Health check
-router.get('/health', (req, res) => res.json({ status: 'ok', app: 'Mixte-Meet API', version: '1.0.0' }));
+// ════════════════════════════════════════════════
+// ⚙️ ADMIN — Nouvelles routes
+// ════════════════════════════════════════════════
+
+// Membres
+router.get('/admin/users/:id',          authMiddleware, adminOnly, adminCtrl.getUserById);
+router.put('/admin/users/:id/premium',  authMiddleware, adminOnly, adminCtrl.grantPremium);
+router.put('/admin/users/:id/unban',    authMiddleware, adminOnly, adminCtrl.unbanUser);
+router.delete('/admin/users/:id',       authMiddleware, adminOnly, adminCtrl.deleteUser);
+
+// Revenus & paiements
+router.get('/admin/payments',           authMiddleware, adminOnly, adminCtrl.getPayments);
+router.get('/admin/subscriptions',      authMiddleware, adminOnly, adminCtrl.getSubscriptions);
+
+// Promotions
+router.get   ('/admin/promotions',      authMiddleware, adminOnly, adminCtrl.getPromotions);
+router.post  ('/admin/promotions',      authMiddleware, adminOnly, adminCtrl.createPromotion);
+router.put   ('/admin/promotions/:id',  authMiddleware, adminOnly, adminCtrl.updatePromotion);
+router.delete('/admin/promotions/:id',  authMiddleware, adminOnly, adminCtrl.deletePromotion);
+
+// Commerciaux / Affiliés
+router.get   ('/admin/affiliates',              authMiddleware, adminOnly, adminCtrl.getAffiliates);
+router.post  ('/admin/affiliates',              authMiddleware, adminOnly, adminCtrl.createAffiliate);
+router.put   ('/admin/affiliates/:id',          authMiddleware, adminOnly, adminCtrl.updateAffiliate);
+router.get   ('/admin/affiliate-transactions',  authMiddleware, adminOnly, adminCtrl.getAffiliateTransactions);
+router.put   ('/admin/affiliate-transactions/:id/pay', authMiddleware, adminOnly, adminCtrl.payCommission);
+
+// Profils démo
+router.get   ('/admin/demo-profiles',     authMiddleware, adminOnly, adminCtrl.getDemoProfiles);
+router.post  ('/admin/demo-profiles',     authMiddleware, adminOnly, adminCtrl.createDemoProfile);
+router.put   ('/admin/demo-profiles/:id', authMiddleware, adminOnly, adminCtrl.updateDemoProfile);
+router.delete('/admin/demo-profiles/:id', authMiddleware, adminOnly, adminCtrl.deleteDemoProfile);
+
+// Console SQL sécurisée
+router.post('/admin/sql',               authMiddleware, adminOnly, adminCtrl.executeSQL);
+
+// Broadcast
+router.post('/admin/broadcast',         authMiddleware, adminOnly, adminCtrl.sendBroadcast);
+
+// Stats
+router.get('/admin/stats/registrations', authMiddleware, adminOnly, adminCtrl.getRegistrationStats);
+router.get('/admin/stats/countries',     authMiddleware, adminOnly, adminCtrl.getCountryStats);
+
+// ════════════════════════════════════════════════
+// 💓 HEALTH CHECK
+// ════════════════════════════════════════════════
+router.get('/health', (req, res) => res.json({
+  status: 'ok', app: 'Mixte-Meet API', version: '1.0.0'
+}));
 
 module.exports = router;

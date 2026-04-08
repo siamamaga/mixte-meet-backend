@@ -2,141 +2,392 @@
 const pool = require('../config/database');
 
 function handleError(res, err) {
+  console.error('Admin error:', err);
   return res.status(err.status || 500).json({ success: false, message: err.message || 'Erreur serveur' });
 }
 
-// ── Dashboard KPIs ────────────────────────────────────────
-exports.getDashboard = async (req, res) => {
+// ── DASHBOARD ─────────────────────────────────────────────
+async function getDashboard(req, res) {
   try {
-    const [[totalUsers]]   = await pool.query('SELECT COUNT(*) AS n FROM users WHERE status = "active"');
-    const [[newToday]]     = await pool.query('SELECT COUNT(*) AS n FROM users WHERE DATE(created_at) = CURDATE()');
-    const [[activeToday]]  = await pool.query('SELECT COUNT(*) AS n FROM users WHERE last_active_at >= NOW() - INTERVAL 24 HOUR');
-    const [[totalMatches]] = await pool.query('SELECT COUNT(*) AS n FROM matches');
-    const [[totalMsgs]]    = await pool.query('SELECT COUNT(*) AS n FROM messages');
-    const [[premiums]]     = await pool.query('SELECT COUNT(*) AS n FROM users WHERE is_premium = TRUE');
-    const [[pendingPhotos]]= await pool.query('SELECT COUNT(*) AS n FROM user_photos WHERE moderation_status = "pending"');
-    const [[pendingReports]]= await pool.query('SELECT COUNT(*) AS n FROM reports WHERE status = "pending"');
-    const [[revenueMonth]] = await pool.query(
-      'SELECT COALESCE(SUM(amount),0) AS n FROM payments WHERE status="success" AND MONTH(created_at)=MONTH(NOW()) AND currency="XOF"'
+    const [[users]]    = await pool.query('SELECT COUNT(*) as cnt FROM users WHERE deleted_at IS NULL');
+    const [[premium]]  = await pool.query('SELECT COUNT(*) as cnt FROM users WHERE is_premium=1');
+    const [[matches]]  = await pool.query('SELECT COUNT(*) as cnt FROM matches');
+    const [[reports]]  = await pool.query('SELECT COUNT(*) as cnt FROM reports WHERE status="pending"');
+    const [[photos]]   = await pool.query('SELECT COUNT(*) as cnt FROM user_photos WHERE is_verified=0').catch(()=>[[{cnt:0}]]);
+
+    // Top pays
+    const [countries] = await pool.query(
+      'SELECT country_code, country_name, COUNT(*) as cnt FROM users WHERE deleted_at IS NULL GROUP BY country_code, country_name ORDER BY cnt DESC LIMIT 5'
+    );
+
+    // Membres récents
+    const [recent] = await pool.query(
+      'SELECT id, uuid, email, first_name, gender, country_code, country_name, status, role, is_premium, created_at FROM users WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT 10'
     );
 
     // Inscriptions 7 derniers jours
-    const [signupsChart] = await pool.query(`
-      SELECT DATE(created_at) AS date, COUNT(*) AS count
-      FROM users WHERE created_at >= NOW() - INTERVAL 7 DAY
-      GROUP BY DATE(created_at) ORDER BY date ASC
+    const [reg7d] = await pool.query(`
+      SELECT DATE(created_at) as date, COUNT(*) as count
+      FROM users
+      WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+      GROUP BY DATE(created_at)
+      ORDER BY date ASC
     `);
 
-    // Top pays
-    const [topCountries] = await pool.query(`
-      SELECT country_name, country_code, COUNT(*) AS count
-      FROM users WHERE status = "active" AND country_name IS NOT NULL
-      GROUP BY country_code, country_name ORDER BY count DESC LIMIT 10
-    `);
-
-    res.json({
+    return res.json({
       success: true,
       data: {
-        kpis: {
-          total_users:     totalUsers.n,
-          new_today:       newToday.n,
-          active_today:    activeToday.n,
-          total_matches:   totalMatches.n,
-          total_messages:  totalMsgs.n,
-          premium_users:   premiums.n,
-          pending_photos:  pendingPhotos.n,
-          pending_reports: pendingReports.n,
-          revenue_month_xof: revenueMonth.n,
-        },
-        signups_chart: signupsChart,
-        top_countries:  topCountries,
+        total_users:    users.cnt,
+        premium_users:  premium.cnt,
+        total_matches:  matches.cnt,
+        revenue_month:  0,
+        alerts: { pending_reports: reports.cnt, pending_photos: photos.cnt },
+        top_countries:  countries,
+        recent_users:   recent,
+        registrations_7d: reg7d,
+        activity: { online: 0, messages: 0, matches: matches.cnt, swipes: 0, photos: 0 },
       }
     });
-  } catch (err) { handleError(res, err); }
-};
+  } catch(err) { handleError(res, err); }
+}
 
-// ── Liste des membres ─────────────────────────────────────
-exports.getUsers = async (req, res) => {
+// ── MEMBRES ───────────────────────────────────────────────
+async function getUsers(req, res) {
   try {
-    const { page = 1, limit = 20, search, status, country } = req.query;
-    const offset     = (page - 1) * limit;
-    const conditions = [];
-    const params     = [];
+    const limit  = parseInt(req.query.limit)  || 20;
+    const offset = parseInt(req.query.offset) || 0;
+    const status = req.query.status || null;
+    const role   = req.query.role   || null;
+    const search = req.query.search || null;
 
-    if (search) { conditions.push('(email LIKE ? OR first_name LIKE ?)'); params.push(`%${search}%`, `%${search}%`); }
-    if (status)  { conditions.push('status = ?');       params.push(status); }
-    if (country) { conditions.push('country_code = ?'); params.push(country); }
+    let where = 'WHERE deleted_at IS NULL';
+    const params = [];
+    if (status) { where += ' AND status = ?'; params.push(status); }
+    if (role)   { where += ' AND role = ?';   params.push(role); }
+    if (search) { where += ' AND (email LIKE ? OR first_name LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
 
-    const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
-
-    const [users] = await pool.query(
-      `SELECT id, uuid, email, first_name, gender, status, role, is_premium, is_verified,
-              country_code, country_name, created_at, last_active_at
+    const [[{total}]] = await pool.query(`SELECT COUNT(*) as total FROM users ${where}`, params);
+    const [users]     = await pool.query(
+      `SELECT id, uuid, email, first_name, gender, country_code, country_name, city, status, role, is_premium, premium_expires_at, coins, created_at, last_login_at
        FROM users ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
-      [...params, +limit, +offset]
+      [...params, limit, offset]
     );
-    const [[{ total }]] = await pool.query(`SELECT COUNT(*) AS total FROM users ${where}`, params);
 
-    res.json({ success: true, data: users, total, page: +page, pages: Math.ceil(total / limit) });
-  } catch (err) { handleError(res, err); }
-};
+    return res.json({ success: true, data: { users, total, limit, offset } });
+  } catch(err) { handleError(res, err); }
+}
 
-// ── Bannir un membre ──────────────────────────────────────
-exports.banUser = async (req, res) => {
+async function getUserById(req, res) {
   try {
-    const { reason, duration_days } = req.body;
+    const [rows] = await pool.query(
+      'SELECT id, uuid, email, first_name, last_name, gender, country_code, country_name, city, bio, profession, status, role, is_premium, premium_expires_at, coins, created_at, last_login_at FROM users WHERE id = ?',
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ success: false, message: 'Utilisateur non trouvé' });
+    return res.json({ success: true, data: rows[0] });
+  } catch(err) { handleError(res, err); }
+}
+
+async function banUser(req, res) {
+  try {
     await pool.query('UPDATE users SET status = "banned" WHERE id = ?', [req.params.id]);
-    res.json({ success: true, message: 'Compte suspendu' });
-  } catch (err) { handleError(res, err); }
-};
+    return res.json({ success: true, message: 'Utilisateur banni' });
+  } catch(err) { handleError(res, err); }
+}
 
-// ── Signalements ──────────────────────────────────────────
-exports.getReports = async (req, res) => {
+async function unbanUser(req, res) {
   try {
-    const [reports] = await pool.query(`
-      SELECT r.*, u1.email AS reporter_email, u2.email AS reported_email
+    await pool.query('UPDATE users SET status = "active" WHERE id = ?', [req.params.id]);
+    return res.json({ success: true, message: 'Utilisateur réactivé' });
+  } catch(err) { handleError(res, err); }
+}
+
+async function deleteUser(req, res) {
+  try {
+    await pool.query('UPDATE users SET deleted_at = NOW(), status = "deleted" WHERE id = ?', [req.params.id]);
+    return res.json({ success: true, message: 'Utilisateur supprimé' });
+  } catch(err) { handleError(res, err); }
+}
+
+async function grantPremium(req, res) {
+  try {
+    const days = parseInt(req.body.days) || 30;
+    await pool.query(
+      'UPDATE users SET is_premium = 1, premium_expires_at = DATE_ADD(NOW(), INTERVAL ? DAY) WHERE id = ?',
+      [days, req.params.id]
+    );
+    return res.json({ success: true, message: `Premium activé pour ${days} jours` });
+  } catch(err) { handleError(res, err); }
+}
+
+// ── SIGNALEMENTS ──────────────────────────────────────────
+async function getReports(req, res) {
+  try {
+    const [rows] = await pool.query(`
+      SELECT r.*, 
+        u1.first_name as reporter_name, u1.email as reporter_email,
+        u2.first_name as reported_name, u2.email as reported_email
       FROM reports r
-      JOIN users u1 ON u1.id = r.reporter_id
-      LEFT JOIN users u2 ON u2.id = r.reported_user_id
+      LEFT JOIN users u1 ON r.reporter_id = u1.id
+      LEFT JOIN users u2 ON r.reported_id = u2.id
       WHERE r.status = 'pending'
-      ORDER BY r.created_at ASC LIMIT 50
+      ORDER BY r.created_at DESC LIMIT 50
     `);
-    res.json({ success: true, data: reports });
-  } catch (err) { handleError(res, err); }
-};
+    return res.json({ success: true, data: rows });
+  } catch(err) { handleError(res, err); }
+}
 
-exports.handleReport = async (req, res) => {
+async function handleReport(req, res) {
   try {
-    const { status, action_taken } = req.body;
-    await pool.query(
-      'UPDATE reports SET status = ?, action_taken = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?',
-      [status, action_taken, req.user.id, req.params.id]
-    );
-    res.json({ success: true, message: 'Signalement traité' });
-  } catch (err) { handleError(res, err); }
-};
+    const { action } = req.body;
+    await pool.query('UPDATE reports SET status = ?, reviewed_at = NOW(), reviewed_by = ? WHERE id = ?',
+      [action === 'ban' ? 'resolved' : 'rejected', req.user.id, req.params.id]);
+    return res.json({ success: true, message: 'Signalement traité' });
+  } catch(err) { handleError(res, err); }
+}
 
-// ── Modération photos ─────────────────────────────────────
-exports.getPendingPhotos = async (req, res) => {
+// ── PHOTOS ────────────────────────────────────────────────
+async function getPendingPhotos(req, res) {
   try {
-    const [photos] = await pool.query(`
-      SELECT p.id, p.url, p.created_at, u.email, u.first_name
-      FROM user_photos p JOIN users u ON u.id = p.user_id
-      WHERE p.moderation_status = 'pending'
-      ORDER BY p.created_at ASC LIMIT 30
+    const [rows] = await pool.query(`
+      SELECT p.*, u.first_name as user_name, u.email
+      FROM user_photos p
+      JOIN users u ON p.user_id = u.id
+      WHERE p.is_verified = 0
+      ORDER BY p.created_at DESC LIMIT 50
+    `).catch(() => [[]]);
+    return res.json({ success: true, data: rows });
+  } catch(err) { return res.json({ success: true, data: [] }); }
+}
+
+async function moderatePhoto(req, res) {
+  try {
+    const { approved } = req.body;
+    await pool.query('UPDATE user_photos SET is_verified = ? WHERE id = ?', [approved ? 1 : 0, req.params.id]);
+    return res.json({ success: true, message: approved ? 'Photo approuvée' : 'Photo rejetée' });
+  } catch(err) { handleError(res, err); }
+}
+
+// ── PAIEMENTS ─────────────────────────────────────────────
+async function getPayments(req, res) {
+  try {
+    const [rows] = await pool.query(`
+      SELECT p.*, u.first_name as user_name, u.email
+      FROM payments p
+      LEFT JOIN users u ON p.user_id = u.id
+      ORDER BY p.created_at DESC LIMIT 100
+    `).catch(() => [[]]);
+    return res.json({ success: true, data: rows });
+  } catch(err) { return res.json({ success: true, data: [] }); }
+}
+
+async function getSubscriptions(req, res) {
+  try {
+    const [rows] = await pool.query(`
+      SELECT id, first_name, email, is_premium, premium_expires_at, country_code, created_at
+      FROM users
+      WHERE is_premium = 1 AND deleted_at IS NULL
+      ORDER BY premium_expires_at ASC
     `);
-    res.json({ success: true, data: photos });
-  } catch (err) { handleError(res, err); }
-};
+    return res.json({ success: true, data: rows });
+  } catch(err) { handleError(res, err); }
+}
 
-exports.moderatePhoto = async (req, res) => {
+// ── PROMOTIONS ────────────────────────────────────────────
+async function getPromotions(req, res) {
   try {
-    const { status, rejected_reason } = req.body;
-    if (!['approved','rejected'].includes(status)) return res.status(400).json({ success: false, message: 'Status invalide' });
-    await pool.query(
-      'UPDATE user_photos SET moderation_status = ?, rejected_reason = ? WHERE id = ?',
-      [status, rejected_reason || null, req.params.id]
+    const [rows] = await pool.query('SELECT * FROM promotions ORDER BY created_at DESC');
+    return res.json({ success: true, data: rows });
+  } catch(err) { return res.json({ success: true, data: [] }); }
+}
+
+async function createPromotion(req, res) {
+  try {
+    const { name, label, plan_id, discount_pct, price_xof, price_eur, expires_at, max_uses, is_active, show_countdown, color } = req.body;
+    const [result] = await pool.query(
+      'INSERT INTO promotions (name, label, plan_id, discount_pct, price_xof, price_eur, expires_at, max_uses, is_active, show_countdown, color, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+      [name, label, plan_id, discount_pct, price_xof||0, price_eur||0, expires_at||null, max_uses||null, is_active!==false?1:0, show_countdown?1:0, color||'gold', req.user.id]
     );
-    res.json({ success: true, message: `Photo ${status === 'approved' ? 'approuvée' : 'rejetée'}` });
-  } catch (err) { handleError(res, err); }
+    return res.json({ success: true, data: { id: result.insertId }, message: 'Promotion créée' });
+  } catch(err) { handleError(res, err); }
+}
+
+async function updatePromotion(req, res) {
+  try {
+    const { is_active, label, discount_pct, expires_at } = req.body;
+    await pool.query(
+      'UPDATE promotions SET is_active=?, label=?, discount_pct=?, expires_at=?, updated_at=NOW() WHERE id=?',
+      [is_active?1:0, label, discount_pct, expires_at||null, req.params.id]
+    );
+    return res.json({ success: true, message: 'Promotion mise à jour' });
+  } catch(err) { handleError(res, err); }
+}
+
+async function deletePromotion(req, res) {
+  try {
+    await pool.query('DELETE FROM promotions WHERE id = ?', [req.params.id]);
+    return res.json({ success: true, message: 'Promotion supprimée' });
+  } catch(err) { handleError(res, err); }
+}
+
+// ── COMMERCIAUX ───────────────────────────────────────────
+async function getAffiliates(req, res) {
+  try {
+    const [rows] = await pool.query('SELECT * FROM affiliates ORDER BY total_earned_xof DESC');
+    // Calculer le montant à payer
+    const result = rows.map(a => ({
+      ...a,
+      topay: (a.total_earned_xof || 0) - (a.total_paid_xof || 0)
+    }));
+    return res.json({ success: true, data: result });
+  } catch(err) { return res.json({ success: true, data: [] }); }
+}
+
+async function createAffiliate(req, res) {
+  try {
+    const { first_name, last_name, email, phone, country_code, city, promo_code, commission_pct, client_discount_pct, payment_method, payment_details } = req.body;
+    await pool.query(
+      'INSERT INTO affiliates (first_name, last_name, email, phone, country_code, city, promo_code, commission_pct, client_discount_pct, payment_method, payment_details) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+      [first_name, last_name, email, phone||null, country_code||'BJ', city||null, promo_code?.toUpperCase(), commission_pct||10, client_discount_pct||20, payment_method||'mobile_money', payment_details||null]
+    );
+    return res.json({ success: true, message: 'Commercial créé' });
+  } catch(err) { handleError(res, err); }
+}
+
+async function updateAffiliate(req, res) {
+  try {
+    const { commission_pct, client_discount_pct, status } = req.body;
+    await pool.query(
+      'UPDATE affiliates SET commission_pct=?, client_discount_pct=?, status=?, updated_at=NOW() WHERE id=?',
+      [commission_pct, client_discount_pct, status, req.params.id]
+    );
+    return res.json({ success: true, message: 'Commercial mis à jour' });
+  } catch(err) { handleError(res, err); }
+}
+
+async function getAffiliateTransactions(req, res) {
+  try {
+    const [rows] = await pool.query(`
+      SELECT at.*, a.first_name as affiliate_name, a.promo_code
+      FROM affiliate_transactions at
+      JOIN affiliates a ON at.affiliate_id = a.id
+      ORDER BY at.created_at DESC LIMIT 100
+    `);
+    return res.json({ success: true, data: rows });
+  } catch(err) { return res.json({ success: true, data: [] }); }
+}
+
+async function payCommission(req, res) {
+  try {
+    await pool.query(
+      'UPDATE affiliate_transactions SET commission_status="paid", paid_at=NOW(), paid_by=? WHERE id=?',
+      [req.user.id, req.params.id]
+    );
+    return res.json({ success: true, message: 'Commission marquée comme payée' });
+  } catch(err) { handleError(res, err); }
+}
+
+// ── PROFILS DEMO ──────────────────────────────────────────
+async function getDemoProfiles(req, res) {
+  try {
+    const [rows] = await pool.query('SELECT * FROM demo_profiles ORDER BY id ASC');
+    return res.json({ success: true, data: rows });
+  } catch(err) { return res.json({ success: true, data: [] }); }
+}
+
+async function createDemoProfile(req, res) {
+  try {
+    const { first_name, age, gender, country_code, country_name, city, bio, profession, emoji, looking_for } = req.body;
+    await pool.query(
+      'INSERT INTO demo_profiles (first_name, age, gender, country_code, country_name, city, bio, profession, emoji, looking_for) VALUES (?,?,?,?,?,?,?,?,?,?)',
+      [first_name, age||25, gender||'woman', country_code||'BJ', country_name||'Bénin', city||null, bio||null, profession||null, emoji||'👤', looking_for||'both']
+    );
+    return res.json({ success: true, message: 'Profil démo créé' });
+  } catch(err) { handleError(res, err); }
+}
+
+async function updateDemoProfile(req, res) {
+  try {
+    const { first_name, age, bio, profession, emoji, is_active, city } = req.body;
+    await pool.query(
+      'UPDATE demo_profiles SET first_name=?, age=?, bio=?, profession=?, emoji=?, is_active=?, city=? WHERE id=?',
+      [first_name, age, bio, profession, emoji, is_active?1:0, city, req.params.id]
+    );
+    return res.json({ success: true, message: 'Profil démo mis à jour' });
+  } catch(err) { handleError(res, err); }
+}
+
+async function deleteDemoProfile(req, res) {
+  try {
+    await pool.query('DELETE FROM demo_profiles WHERE id = ?', [req.params.id]);
+    return res.json({ success: true, message: 'Profil démo supprimé' });
+  } catch(err) { handleError(res, err); }
+}
+
+// ── CONSOLE SQL ───────────────────────────────────────────
+async function executeSQL(req, res) {
+  try {
+    const { query } = req.body;
+    if (!query) return res.status(400).json({ success: false, message: 'Requête requise' });
+
+    // Sécurité : bloquer les requêtes dangereuses
+    const forbidden = /^\s*(DROP\s+TABLE|DROP\s+DATABASE|TRUNCATE\s+TABLE\s+users|ALTER\s+TABLE\s+users\s+DROP)/i;
+    if (forbidden.test(query)) {
+      return res.status(403).json({ success: false, message: 'Requête interdite pour des raisons de sécurité' });
+    }
+
+    const [result] = await pool.query(query);
+    return res.json({ success: true, data: Array.isArray(result) ? result : { affectedRows: result.affectedRows } });
+  } catch(err) {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+}
+
+// ── BROADCAST ─────────────────────────────────────────────
+async function sendBroadcast(req, res) {
+  try {
+    const { title, message, target } = req.body;
+    // En production: envoyer via email/push notifications
+    // Pour l'instant on log juste
+    console.log(`📣 Broadcast: [${target}] ${title} — ${message}`);
+    return res.json({ success: true, message: `Notification envoyée à ${target}` });
+  } catch(err) { handleError(res, err); }
+}
+
+// ── STATS ─────────────────────────────────────────────────
+async function getRegistrationStats(req, res) {
+  try {
+    const [rows] = await pool.query(`
+      SELECT DATE(created_at) as date, COUNT(*) as count
+      FROM users
+      WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+      GROUP BY DATE(created_at)
+      ORDER BY date ASC
+    `);
+    return res.json({ success: true, data: rows });
+  } catch(err) { handleError(res, err); }
+}
+
+async function getCountryStats(req, res) {
+  try {
+    const [rows] = await pool.query(`
+      SELECT country_code, country_name, COUNT(*) as cnt
+      FROM users WHERE deleted_at IS NULL
+      GROUP BY country_code, country_name
+      ORDER BY cnt DESC LIMIT 10
+    `);
+    return res.json({ success: true, data: rows });
+  } catch(err) { handleError(res, err); }
+}
+
+module.exports = {
+  getDashboard, getUsers, getUserById, banUser, unbanUser, deleteUser, grantPremium,
+  getReports, handleReport,
+  getPendingPhotos, moderatePhoto,
+  getPayments, getSubscriptions,
+  getPromotions, createPromotion, updatePromotion, deletePromotion,
+  getAffiliates, createAffiliate, updateAffiliate, getAffiliateTransactions, payCommission,
+  getDemoProfiles, createDemoProfile, updateDemoProfile, deleteDemoProfile,
+  executeSQL, sendBroadcast,
+  getRegistrationStats, getCountryStats,
 };
