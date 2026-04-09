@@ -9,6 +9,7 @@ function handleError(res, err) {
 // ── DASHBOARD ─────────────────────────────────────────────
 async function getDashboard(req, res) {
   try {
+    res.set('Cache-Control', 'no-store');
     const [[users]]    = await pool.query('SELECT COUNT(*) as cnt FROM users WHERE deleted_at IS NULL');
     const [[premium]]  = await pool.query('SELECT COUNT(*) as cnt FROM users WHERE is_premium=1');
     const [[matches]]  = await pool.query('SELECT COUNT(*) as cnt FROM matches');
@@ -171,6 +172,8 @@ async function moderatePhoto(req, res) {
 // ── PHOTOS D'UN USER ─────────────────────────────────────
 async function getUserPhotos(req, res) {
   try {
+    // Désactiver le cache pour toujours avoir les vraies photos
+    res.set('Cache-Control', 'no-store');
     const [rows] = await pool.query(
       'SELECT id, url, url_thumb, is_main, is_verified, created_at FROM user_photos WHERE user_id = ? ORDER BY is_main DESC, created_at ASC',
       [req.params.id]
