@@ -68,6 +68,7 @@ router.post  ('/messages/:id/react',         authMiddleware, msgCtrl.addReaction
 // ════════════════════════════════════════════════
 // 🛡️ SIGNALEMENT / BLOCAGE
 // ════════════════════════════════════════════════
+router.get   ('/me/blocked',   authMiddleware, userCtrl.getBlocked);
 router.post  ('/report',       authMiddleware, userCtrl.report);
 router.post  ('/block',        authMiddleware, userCtrl.block);
 router.delete('/block/:uuid',  authMiddleware, userCtrl.unblock);
@@ -135,3 +136,4 @@ router.get('/health', (req, res) => res.json({
 }));
 
 module.exports = router;
+
