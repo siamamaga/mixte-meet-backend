@@ -183,3 +183,4 @@ async function getUser(userId) {
 }
 
 module.exports = { getFeed, swipe, undoLastSwipe, getMatches };
+
