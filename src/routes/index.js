@@ -133,10 +133,12 @@ router.get('/admin/stats/countries',     authMiddleware, adminOnly, adminCtrl.ge
 // ════════════════════════════════════════════════
 // 💓 HEALTH CHECK
 // ════════════════════════════════════════════════
+router.get('/ping', (req, res) => res.send('ok'));
 router.get('/health', (req, res) => res.json({
   status: 'ok', app: 'Mixte-Meet API', version: '1.0.0'
 }));
 
 module.exports = router;
+
 
 
