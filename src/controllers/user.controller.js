@@ -49,6 +49,52 @@ exports.deletePhoto = async (req, res) => {
   catch (err) { handleError(res, err); }
 };
 
+exports.getVerificationStatus = async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT verification_status, verification_submitted_at FROM users WHERE id = ?',
+      [req.user.id]
+    );
+    res.json({ success: true, data: rows[0] || { verification_status: 'none' } });
+  } catch(err) { handleError(res, err); }
+};
+
+exports.submitVerification = async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: 'Selfie requis' });
+    const { gesture } = req.body;
+
+    // Upload selfie sur Cloudinary
+    const cloudinary = require('../config/cloudinary');
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: 'mixte-meet/verifications', resource_type: 'image' },
+        (err, r) => err ? reject(err) : resolve(r)
+      );
+      stream.end(req.file.buffer);
+    });
+
+    // Sauvegarder en base
+    await pool.query(`
+      UPDATE users SET
+        verification_status = 'pending',
+        verification_selfie_url = ?,
+        verification_gesture = ?,
+        verification_submitted_at = NOW()
+      WHERE id = ?
+    `, [result.secure_url, gesture, req.user.id]);
+
+    // Créer un signalement admin pour review
+    await pool.query(`
+      INSERT INTO admin_verifications (user_id, selfie_url, gesture, status, created_at)
+      VALUES (?, ?, ?, 'pending', NOW())
+      ON DUPLICATE KEY UPDATE selfie_url=VALUES(selfie_url), gesture=VALUES(gesture), status='pending', created_at=NOW()
+    `, [req.user.id, result.secure_url, gesture]);
+
+    res.json({ success: true, message: 'Selfie envoyé — en cours de vérification' });
+  } catch(err) { handleError(res, err); }
+};
+
 exports.getBlocked = async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -95,4 +141,5 @@ exports.unblock = async (req, res) => {
     res.json({ success: true, message: 'Utilisateur débloqué' });
   } catch (err) { handleError(res, err); }
 };
+
 
