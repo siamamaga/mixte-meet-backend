@@ -98,13 +98,13 @@ exports.submitVerification = async (req, res) => {
 exports.getBlocked = async (req, res) => {
   try {
     const [rows] = await pool.query(
-      \SELECT u.uuid, u.first_name, u.country_code, u.country_name,
+      `SELECT u.uuid, u.first_name, u.country_code, u.country_name,
              p.url AS main_photo
       FROM blocks b
       JOIN users u ON u.id = b.blocked_id
       LEFT JOIN user_photos p ON p.user_id = u.id AND p.is_main = 1
       WHERE b.blocker_id = ?
-      ORDER BY b.created_at DESC\
+      ORDER BY b.created_at DESC`
     , [req.user.id]);
     res.json({ success: true, data: rows });
   } catch (err) { handleError(res, err); }
