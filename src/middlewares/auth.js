@@ -54,3 +54,4 @@ function premiumOnly(req, res, next) {
 }
 
 module.exports = { authMiddleware, adminOnly, premiumOnly };
+
