@@ -39,6 +39,7 @@ router.post('/auth/forgot-password',                      authCtrl.forgotPasswor
 // 👤 PROFIL
 // ════════════════════════════════════════════════
 router.get ('/me',                   authMiddleware, userCtrl.getMyProfile);
+router.get ('/me/stats',              authMiddleware, userCtrl.getStats);
 router.put ('/me',                   authMiddleware, userCtrl.updateProfile);
 router.get ('/users/:uuid',          authMiddleware, userCtrl.getProfile);
 
@@ -155,6 +156,7 @@ router.get('/health', (req, res) => res.json({
 }));
 
 module.exports = router;
+
 
 
 

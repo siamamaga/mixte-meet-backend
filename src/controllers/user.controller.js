@@ -11,6 +11,20 @@ exports.getMyProfile = async (req, res) => {
   catch (err) { handleError(res, err); }
 };
 
+exports.getStats = async (req, res) => {
+  try {
+    const id = req.user.id;
+    const [[likes]]   = await pool.query('SELECT COUNT(*) as cnt FROM swipes WHERE swiped_id = ? AND action IN (\'like\',\'super_like\')', [id]);
+    const [[matches]] = await pool.query('SELECT COUNT(*) as cnt FROM matches WHERE (user1_id = ? OR user2_id = ?) AND is_active = TRUE', [id, id]);
+    const [[views]]   = await pool.query('SELECT COUNT(*) as cnt FROM profile_views WHERE viewed_id = ?', [id]);
+    res.json({ success: true, data: {
+      likes_received: likes.cnt,
+      matches_count: matches.cnt,
+      profile_views: views.cnt,
+    }});
+  } catch(err) { handleError(res, err); }
+};
+
 exports.getProfile = async (req, res) => {
   try { res.json({ success: true, data: await userSvc.getProfile(req.params.uuid, req.user.id) }); }
   catch (err) { handleError(res, err); }
@@ -141,6 +155,7 @@ exports.unblock = async (req, res) => {
     res.json({ success: true, message: 'Utilisateur débloqué' });
   } catch (err) { handleError(res, err); }
 };
+
 
 
 
