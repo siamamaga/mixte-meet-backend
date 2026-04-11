@@ -15,7 +15,7 @@ async function getFeed(userId, filters = {}) {
   `;
 
   // Construire les filtres dynamiques
-  const conditions = [`u.id != ${userId}`, `u.status = 'active'`, `u.id NOT IN (${excluded})`];
+  const conditions = [`u.id != ${userId}`, `u.status = 'active'`, `u.role = 'user'`, `u.id NOT IN (${excluded})`];
   const params     = [];
 
   // Filtre continent
@@ -183,4 +183,5 @@ async function getUser(userId) {
 }
 
 module.exports = { getFeed, swipe, undoLastSwipe, getMatches };
+
 
