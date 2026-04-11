@@ -394,6 +394,39 @@ async function getCountryStats(req, res) {
   } catch(err) { handleError(res, err); }
 }
 
+exports.getVerifications = async (req, res) => {
+  try {
+    const pool = require('../config/database');
+    const [rows] = await pool.query(
+      SELECT av.*, u.first_name, u.email, u.id as user_id
+      FROM admin_verifications av
+      JOIN users u ON u.id = av.user_id
+      WHERE av.status = 'pending'
+      ORDER BY av.created_at DESC
+    );
+    res.json({ success: true, data: rows });
+  } catch(err) { res.status(500).json({ success: false, message: err.message }); }
+};
+
+exports.handleVerification = async (req, res) => {
+  try {
+    const pool = require('../config/database');
+    const { action } = req.body;
+    const [verif] = await pool.query('SELECT * FROM admin_verifications WHERE id = ?', [req.params.id]);
+    if (!verif.length) return res.status(404).json({ success: false, message: 'Introuvable' });
+    
+    if (action === 'approve') {
+      await pool.query('UPDATE users SET is_verified = 1 WHERE id = ?', [verif[0].user_id]);
+      await pool.query('UPDATE admin_verifications SET status = ? WHERE id = ?', ['approved', req.params.id]);
+      await pool.query('UPDATE users SET verification_status = ? WHERE id = ?', ['approved', verif[0].user_id]);
+    } else {
+      await pool.query('UPDATE admin_verifications SET status = ? WHERE id = ?', ['rejected', req.params.id]);
+      await pool.query('UPDATE users SET verification_status = ? WHERE id = ?', ['rejected', verif[0].user_id]);
+    }
+    res.json({ success: true, message: action === 'approve' ? 'Profil verifie' : 'Verification refusee' });
+  } catch(err) { res.status(500).json({ success: false, message: err.message }); }
+};
+
 module.exports = {
   getDashboard, getUsers, getUserById, getUserPhotos, banUser, unbanUser, deleteUser, grantPremium,
   getReports, handleReport,
@@ -405,3 +438,4 @@ module.exports = {
   executeSQL, sendBroadcast,
   getRegistrationStats, getCountryStats,
 };
+
