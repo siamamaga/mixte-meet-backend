@@ -135,11 +135,27 @@ router.get('/admin/stats/countries',     authMiddleware, adminOnly, adminCtrl.ge
 // 💓 HEALTH CHECK
 // ════════════════════════════════════════════════
 router.get('/ping', (req, res) => res.send('ok'));
+router.get('/notifications/unread', require('../middlewares/auth').authMiddleware, async (req, res) => {
+  try {
+    const pool = require('../config/database');
+    const userId = req.user.id;
+    const [[msgs]] = await pool.query(
+      'SELECT COUNT(*) as new_messages FROM messages m JOIN conversations c ON c.id = m.conversation_id JOIN matches mt ON mt.id = c.match_id WHERE (mt.user1_id = ? OR mt.user2_id = ?) AND m.sender_id != ? AND m.is_read = 0',
+      [userId, userId, userId]
+    );
+    const [[matchs]] = await pool.query(
+      'SELECT COUNT(*) as new_matches FROM matches WHERE (user1_id = ? OR user2_id = ?) AND matched_at > DATE_SUB(NOW(), INTERVAL 24 HOUR)',
+      [userId, userId]
+    );
+    res.json({ success: true, data: { new_messages: msgs.new_messages, new_matches: matchs.new_matches } });
+  } catch(e) { res.json({ success: true, data: { new_messages: 0, new_matches: 0 } }); }
+});
 router.get('/health', (req, res) => res.json({
   status: 'ok', app: 'Mixte-Meet API', version: '1.0.0'
 }));
 
 module.exports = router;
+
 
 
 
