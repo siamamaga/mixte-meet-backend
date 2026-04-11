@@ -137,3 +137,4 @@ async function deletePhoto(userId, photoId) {
 }
 
 module.exports = { getMyProfile, getProfile, updateProfile, uploadPhoto, setMainPhoto, deletePhoto };
+
