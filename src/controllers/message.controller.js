@@ -51,6 +51,17 @@ exports.sendMessage = async (req, res) => {
   } catch (err) { handleError(res, err); }
 };
 
+exports.markAsRead = async (req, res) => {
+  try {
+    const pool = require('../config/database');
+    await pool.query(
+      'UPDATE messages SET is_read = 1, read_at = NOW() WHERE conversation_id = ? AND sender_id != ? AND is_read = 0',
+      [req.params.id, req.user.id]
+    );
+    res.json({ success: true });
+  } catch(err) { handleError(res, err); }
+};
+
 exports.deleteMessage = async (req, res) => {
   try { res.json({ success: true, ...(await msgSvc.deleteMessage(req.params.id, req.user.id)) }); }
   catch (err) { handleError(res, err); }
@@ -63,5 +74,6 @@ exports.addReaction = async (req, res) => {
     res.json({ success: true, ...(await msgSvc.addReaction(req.params.id, req.user.id, emoji)) });
   } catch (err) { handleError(res, err); }
 };
+
 
 

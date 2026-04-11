@@ -65,6 +65,7 @@ router.post  ('/conversations/find-or-create', authMiddleware, msgCtrl.findOrCre
 router.get   ('/conversations/:id/messages', authMiddleware, msgCtrl.getMessages);
 router.post  ('/conversations/:id/messages', authMiddleware, msgCtrl.sendMessage);
 router.delete('/messages/:id',               authMiddleware, msgCtrl.deleteMessage);
+router.put   ('/conversations/:id/read',     authMiddleware, msgCtrl.markAsRead);
 router.post  ('/messages/:id/react',         authMiddleware, msgCtrl.addReaction);
 
 // ════════════════════════════════════════════════
@@ -160,6 +161,7 @@ router.get('/health', (req, res) => res.json({
 }));
 
 module.exports = router;
+
 
 
 
