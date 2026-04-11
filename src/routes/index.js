@@ -141,6 +141,13 @@ router.get('/admin/stats/countries',     authMiddleware, adminOnly, adminCtrl.ge
 // 💓 HEALTH CHECK
 // ════════════════════════════════════════════════
 router.get('/ping', (req, res) => res.send('ok'));
+router.delete('/swipes/reset', authMiddleware, async (req, res) => {
+  try {
+    const pool = require('../config/database');
+    await pool.query('DELETE FROM swipes WHERE swiper_id = ?', [req.user.id]);
+    res.json({ success: true, message: 'Swipes reinitialises' });
+  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
+});
 router.get('/notifications/unread', require('../middlewares/auth').authMiddleware, async (req, res) => {
   try {
     const pool = require('../config/database');
@@ -161,6 +168,7 @@ router.get('/health', (req, res) => res.json({
 }));
 
 module.exports = router;
+
 
 
 
