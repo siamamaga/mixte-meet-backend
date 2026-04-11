@@ -1,4 +1,5 @@
 // src/controllers/message.controller.js
+const pool = require('../config/database');
 const msgSvc = require('../services/message.service');
 
 function handleError(res, err) {
