@@ -394,9 +394,20 @@ async function getCountryStats(req, res) {
   } catch(err) { handleError(res, err); }
 }
 
+module.exports = {
+  getDashboard, getUsers, getUserById, getUserPhotos, banUser, unbanUser, deleteUser, grantPremium,
+  getReports, handleReport,
+  getPendingPhotos, moderatePhoto,
+  getPayments, getSubscriptions,
+  getPromotions, createPromotion, updatePromotion, deletePromotion,
+  getAffiliates, createAffiliate, updateAffiliate, getAffiliateTransactions, payCommission,
+  getDemoProfiles, createDemoProfile, updateDemoProfile, deleteDemoProfile,
+  executeSQL, sendBroadcast,
+  getRegistrationStats, getCountryStats,
+};
+
 exports.getVerifications = async (req, res) => {
   try {
-    const pool = require('../config/database');
     const [rows] = await pool.query(
       `SELECT av.*, u.first_name, u.email, u.id as user_id
       FROM admin_verifications av
@@ -410,32 +421,23 @@ exports.getVerifications = async (req, res) => {
 
 exports.handleVerification = async (req, res) => {
   try {
-    const pool = require('../config/database');
     const { action } = req.body;
     const [verif] = await pool.query('SELECT * FROM admin_verifications WHERE id = ?', [req.params.id]);
     if (!verif.length) return res.status(404).json({ success: false, message: 'Introuvable' });
-    
     if (action === 'approve') {
-      await pool.query('UPDATE users SET is_verified = 1 WHERE id = ?', [verif[0].user_id]);
+      await pool.query('UPDATE users SET is_verified = 1, verification_status = ? WHERE id = ?', ['approved', verif[0].user_id]);
       await pool.query('UPDATE admin_verifications SET status = ? WHERE id = ?', ['approved', req.params.id]);
-      await pool.query('UPDATE users SET verification_status = ? WHERE id = ?', ['approved', verif[0].user_id]);
     } else {
-      await pool.query('UPDATE admin_verifications SET status = ? WHERE id = ?', ['rejected', req.params.id]);
       await pool.query('UPDATE users SET verification_status = ? WHERE id = ?', ['rejected', verif[0].user_id]);
+      await pool.query('UPDATE admin_verifications SET status = ? WHERE id = ?', ['rejected', req.params.id]);
     }
-    res.json({ success: true, message: action === 'approve' ? 'Profil verifie' : 'Verification refusee' });
+    res.json({ success: true });
   } catch(err) { res.status(500).json({ success: false, message: err.message }); }
 };
 
-module.exports = {
-  getDashboard, getUsers, getUserById, getUserPhotos, banUser, unbanUser, deleteUser, grantPremium,
-  getReports, handleReport,
-  getPendingPhotos, moderatePhoto,
-  getPayments, getSubscriptions,
-  getPromotions, createPromotion, updatePromotion, deletePromotion,
-  getAffiliates, createAffiliate, updateAffiliate, getAffiliateTransactions, payCommission,
-  getDemoProfiles, createDemoProfile, updateDemoProfile, deleteDemoProfile,
-  executeSQL, sendBroadcast,
-  getRegistrationStats, getCountryStats,
+exports.unbanUser = async (req, res) => {
+  try {
+    await pool.query('UPDATE users SET status = ? WHERE id = ?', ['active', req.params.id]);
+    res.json({ success: true });
+  } catch(err) { res.status(500).json({ success: false, message: err.message }); }
 };
-
