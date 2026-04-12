@@ -398,11 +398,11 @@ exports.getVerifications = async (req, res) => {
   try {
     const pool = require('../config/database');
     const [rows] = await pool.query(
-      SELECT av.*, u.first_name, u.email, u.id as user_id
+      `SELECT av.*, u.first_name, u.email, u.id as user_id
       FROM admin_verifications av
       JOIN users u ON u.id = av.user_id
       WHERE av.status = 'pending'
-      ORDER BY av.created_at DESC
+      ORDER BY av.created_at DESC`
     );
     res.json({ success: true, data: rows });
   } catch(err) { res.status(500).json({ success: false, message: err.message }); }
