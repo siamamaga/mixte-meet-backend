@@ -6,6 +6,24 @@ function handleError(res, err) {
   return res.status(err.status || 500).json({ success: false, message: err.message || 'Erreur serveur', code: err.code });
 }
 
+exports.getSearch = async (req, res) => {
+  try {
+    const pool = require('../config/database');
+    const userId = req.user.id;
+    const q = req.query.q || '';
+    const gender = req.query.gender || '';
+    const continent = req.query.continent || '';
+    let sql = 'SELECT u.uuid, u.first_name, u.gender, TIMESTAMPDIFF(YEAR, u.birthdate, CURDATE()) AS age, u.country_code, u.country_name, u.city, u.continent, u.bio, u.profession, u.is_verified, u.last_active_at, (SELECT url FROM user_photos WHERE user_id = u.id AND is_main = 1 LIMIT 1) AS main_photo FROM users u WHERE u.id != ? AND u.status = ? AND u.role = ?';
+    const params = [userId, 'active', 'user'];
+    if (q) { sql += ' AND (u.first_name LIKE ? OR u.city LIKE ? OR u.profession LIKE ?)'; params.push('%'+q+'%', '%'+q+'%', '%'+q+'%'); }
+    if (gender) { sql += ' AND u.gender = ?'; params.push(gender); }
+    if (continent) { sql += ' AND u.continent = ?'; params.push(continent); }
+    sql += ' ORDER BY u.last_active_at DESC LIMIT 50';
+    const [rows] = await pool.query(sql, params);
+    res.json({ success: true, data: rows });
+  } catch(err) { res.status(500).json({ success: false, message: err.message }); }
+};
+
 exports.getFeed = async (req, res) => {
   try {
     const profiles = await matchSvc.getFeed(req.user.id, req.query);
@@ -78,3 +96,4 @@ exports.addReaction = async (req, res) => {
     res.json({ success: true, ...(await msgSvc.addReaction(req.params.id, req.user.id, emoji)) });
   } catch (err) { handleError(res, err); }
 };
+
