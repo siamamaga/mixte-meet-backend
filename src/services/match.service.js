@@ -63,11 +63,17 @@ async function getFeed(userId, filters = {}) {
 
   const sqlDemo = `
     SELECT
-      CONCAT('demo-', d.id) AS uuid, d.first_name, d.gender, d.age,
-      d.country_code, d.country_name, d.city, NULL AS continent,
-      d.bio, d.profession, 0 AS is_verified, NULL AS last_active_at,
-      d.photo_url AS main_photo, 1 AS photos_count,
-      'demo' AS profile_type
+      CONCAT('demo-', d.id) AS uuid,
+      d.first_name, d.gender, d.age,
+      d.country_code, d.country_name, d.city,
+      NULL AS continent,
+      d.bio, d.profession,
+      0 AS is_verified,
+      NOW() AS last_active_at,
+      NULL AS main_photo,
+      0 AS photos_count,
+      'demo' AS profile_type,
+      d.emoji
     FROM demo_profiles d
     WHERE ${demoConditions.join(' AND ')}
     ORDER BY RAND()
