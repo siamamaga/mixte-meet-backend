@@ -63,7 +63,7 @@ async function getFeed(userId, filters = {}) {
 
   const sqlDemo = `
     SELECT
-      d.uuid, d.first_name, d.gender, d.age,
+      CONCAT('demo-', d.id) AS uuid, d.first_name, d.gender, d.age,
       d.country_code, d.country_name, d.city, d.continent,
       d.bio, d.profession, 0 AS is_verified, NULL AS last_active_at,
       d.photo_url AS main_photo, 1 AS photos_count,
@@ -147,3 +147,4 @@ async function getMatches(userId) {
 }
 
 module.exports = { getFeed, swipe: recordSwipe, undoLastSwipe: async (userId) => { const [last] = await pool.query('SELECT id FROM swipes WHERE swiper_id = ? ORDER BY created_at DESC LIMIT 1', [userId]); if (!last.length) throw { status: 404, message: 'Aucun swipe a annuler' }; await pool.query('DELETE FROM swipes WHERE id = ?', [last[0].id]); return { message: 'Dernier swipe annule' }; }, getMatches };
+
