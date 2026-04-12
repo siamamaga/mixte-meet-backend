@@ -15,6 +15,18 @@ async function getFeed(userId, filters = {}) {
   `;
 
   // Construire les filtres dynamiques
+// Auto-reinitialiser si tous les profils ont ete vus
+  const [available] = await pool.query(
+    'SELECT COUNT(*) as cnt FROM users WHERE id != ? AND status = "active" AND role = "user"',
+    [userId]
+  );
+  const [alreadySwiped] = await pool.query(
+    'SELECT COUNT(*) as cnt FROM swipes WHERE swiper_id = ?',
+    [userId]
+  );
+  if (available[0].cnt > 0 && alreadySwiped[0].cnt >= available[0].cnt) {
+    await pool.query('DELETE FROM swipes WHERE swiper_id = ?', [userId]);
+  }
   const conditions = [`u.id != ${userId}`, `u.status = 'active'`, `u.role = 'user'`, `u.id NOT IN (${excluded})`];
   const params     = [];
 
@@ -183,5 +195,6 @@ async function getUser(userId) {
 }
 
 module.exports = { getFeed, swipe, undoLastSwipe, getMatches };
+
 
 
