@@ -131,7 +131,8 @@ router.post('/admin/sql',               authMiddleware, adminOnly, adminCtrl.exe
 router.post('/admin/broadcast',         authMiddleware, adminOnly, adminCtrl.sendBroadcast);
 
 // Stats
-// router.get('/admin/stats/registrations', authMiddleware, adminOnly, adminCtrl.getRegistrationStats);
+router.get('/admin/stats/registrations', authMiddleware, adminOnly, adminCtrl.getRegistrationStats);
+router.get('/admin/stats/countries',     authMiddleware, adminOnly, adminCtrl.getCountryStats);
 router.get('/admin/verifications',      authMiddleware, adminOnly, adminCtrl.getVerifications);
 router.put('/admin/verifications/:id',  authMiddleware, adminOnly, adminCtrl.handleVerification);
 
@@ -166,6 +167,7 @@ router.get('/health', (req, res) => res.json({
 }));
 
 module.exports = router;
+
 
 
 
