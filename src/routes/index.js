@@ -53,6 +53,7 @@ router.delete('/me/photos/:id',      authMiddleware,                        user
 // 💘 MATCHING
 // ════════════════════════════════════════════════
 router.get   ('/feed',           authMiddleware,              matchCtrl.getFeed);
+router.get ('/search', authMiddleware, matchCtrl.getSearch);
 router.post  ('/swipe',          authMiddleware,              matchCtrl.swipe);
 router.post  ('/undo',           authMiddleware, premiumOnly, matchCtrl.undoLastSwipe);
 router.get   ('/matches',        authMiddleware,              matchCtrl.getMatches);
