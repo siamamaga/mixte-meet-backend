@@ -58,7 +58,8 @@ async function updateProfile(userId, data) {
     'country_code','country_name','city','ethnicity','religion','languages',
     'open_to_interracial','diaspora','looking_for','smoking','drinking',
     'children','ui_language','dark_mode','notifications_enabled',
-    'show_online_status','incognito_mode'
+    'show_online_status','incognito_mode',
+    'age_min','age_max','relation_type','distance','looking_for'
   ];
 
   const fields = [];
