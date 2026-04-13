@@ -17,8 +17,7 @@ async function getMyProfile(userId) {
   const [rows] = await pool.query(
     `SELECT ${PUBLIC_FIELDS}, u.email, u.phone, u.coins, u.premium_expires_at,
             u.ui_language, u.dark_mode, u.notifications_enabled,
-            u.incognito_mode, u.looking_for, u.two_fa_enabled,
-            u.age_min, u.age_max, u.relation_type, u.distance
+            u.incognito_mode, u.looking_for, u.two_fa_enabled
      FROM users u WHERE u.id = ?`,
     [userId]
   );
@@ -138,5 +137,6 @@ async function deletePhoto(userId, photoId) {
 }
 
 module.exports = { getMyProfile, getProfile, updateProfile, uploadPhoto, setMainPhoto, deletePhoto };
+
 
 
