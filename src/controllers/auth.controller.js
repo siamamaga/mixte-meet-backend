@@ -58,11 +58,16 @@ async function forgotPassword(req, res) {
     const resetToken = require('crypto').randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 3600000); // 1 heure
     await pool.query('UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?', [resetToken, expires, user.id]);
-    await emailService.sendPasswordReset({
-      to: email,
-      firstName: user.first_name,
-      resetToken,
-    });
+    try {
+      await emailService.sendPasswordReset({
+        to: email,
+        firstName: user.first_name,
+        resetToken,
+      });
+      console.log('Reset email envoye a:', email);
+    } catch(emailErr) {
+      console.error('ERREUR EMAIL:', emailErr.message);
+    }
     return res.json({ success: true, message: 'Email de réinitialisation envoyé' });
   } catch (err) { handleError(res, err); }
 }
@@ -94,5 +99,6 @@ async function resetPassword(req, res) {
   } catch (err) { handleError(res, err); }
 }
 module.exports = { register, login, refresh, changePassword, logout, forgotPassword, resetPassword };
+
 
 
