@@ -74,6 +74,20 @@ async function logout(req, res) {
   return res.json({ success: true, message: 'Déconnexion réussie' });
 }
 
+async function resetPassword(req, res) {
+  const { token, password } = req.body;
+  if (!token || !password) return res.status(400).json({ success: false, message: 'Token et mot de passe requis' });
+  try {
+    const pool = require('../config/database');
+    const [users] = await pool.query('SELECT id FROM users WHERE reset_token = ? AND reset_token_expires > NOW()', [token]);
+    if (!users.length) return res.status(400).json({ success: false, message: 'Token invalide ou expire' });
+    const bcrypt = require('bcryptjs');
+    const hash = await bcrypt.hash(password, 12);
+    await pool.query('UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?', [hash, users[0].id]);
+    return res.json({ success: true, message: 'Mot de passe mis a jour' });
+  } catch (err) { handleError(res, err); }
+}
 module.exports = { register, login, refresh, changePassword, logout, forgotPassword, resetPassword };
+
 
 
