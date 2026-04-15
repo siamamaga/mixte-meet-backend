@@ -59,11 +59,16 @@ async function forgotPassword(req, res) {
     const expires = new Date(Date.now() + 3600000); // 1 heure
     await pool.query('UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?', [resetToken, expires, user.id]);
     try {
-      await emailService.sendPasswordReset({
-        to: email,
-        firstName: user.first_name,
-        resetToken,
-      });
+  await emailService.sendPasswordReset({
+    to: email,
+    firstName: user.first_name,
+    resetToken,
+  });
+  console.log('Reset email envoye a:', email);
+} catch(emailErr) {
+  console.error('ERREUR EMAIL:', emailErr.message);
+}
+return res.json({ success: true, message: 'Email de réinitialisation envoyé' });
       console.log('Reset email envoye a:', email);
     } catch(emailErr) {
       console.error('ERREUR EMAIL:', emailErr.message);
