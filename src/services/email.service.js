@@ -48,7 +48,7 @@ function baseTemplate(content) {
         <td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
           <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.3);">
             © 2026 Mixte-Meet · L'amour sans frontières 🌍<br>
-            <a href="https://mixte-meet-app.netlify.app" style="color:#E8317A;text-decoration:none;">mixte-meet-app.netlify.app</a>
+            <a href="https://mixte-meet-webapp.onrender.com" style="color:#E8317A;text-decoration:none;">mixte-meet-webapp.onrender.com</a>
           </p>
         </td>
       </tr>
@@ -102,7 +102,7 @@ async function sendWelcome({ to, firstName }) {
       <p style="margin:0 0 8px;font-size:14px;color:rgba(255,255,255,0.7);">✍️ Complète ta bio</p>
       <p style="margin:0;font-size:14px;color:rgba(255,255,255,0.7);">💞 Commence à swiper !</p>
     </div>
-    ${BTN('Accéder à mon profil', 'https://mixte-meet-app.netlify.app')}
+    ${BTN('Accéder à mon profil', 'https://mixte-meet-webapp.onrender.com')}
     ${P('L\'amour mérite une chance. 🌍❤️')}
   `);
   return sendEmail({ to, subject: `Bienvenue sur Mixte-Meet, ${firstName} ! 🦋`, html });
@@ -120,7 +120,7 @@ async function sendNewMatch({ to, firstName, matchName, matchEmoji }) {
       <span style="font-size:32px;">🦋</span>
       <p style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.6);">Vous êtes maintenant connectés !</p>
     </div>
-    ${BTN('Envoyer un message', 'https://mixte-meet-app.netlify.app')}
+    ${BTN('Envoyer un message', 'https://mixte-meet-webapp.onrender.com')}
     ${P('Ne laisse pas passer cette chance — dis bonjour maintenant ! 😊')}
   `);
   return sendEmail({ to, subject: `💞 Match avec ${matchName} sur Mixte-Meet !`, html });
@@ -134,7 +134,7 @@ async function sendNewMessage({ to, firstName, senderName, senderEmoji, preview 
     <div style="background:rgba(255,255,255,0.04);border-left:3px solid #E8317A;border-radius:0 8px 8px 0;padding:14px 18px;margin:16px 0;font-size:14px;color:rgba(255,255,255,0.65);font-style:italic;">
       "${preview}..."
     </div>
-    ${BTN('Répondre maintenant', 'https://mixte-meet-app.netlify.app')}
+    ${BTN('Répondre maintenant', 'https://mixte-meet-webapp.onrender.com')}
     ${P('Ne laisse pas ce message sans réponse ! 🌍')}
   `);
   return sendEmail({ to, subject: `💬 ${senderName} vous a écrit sur Mixte-Meet`, html });
@@ -153,7 +153,7 @@ async function sendPremiumActivated({ to, firstName, planName, expiresAt }) {
       <p style="margin:0 0 8px;font-size:14px;color:rgba(255,255,255,0.75);">✓ Mode Incognito</p>
       <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.4);margin-top:12px;">Expire le : ${expiresAt}</p>
     </div>
-    ${BTN('Profiter de mon Premium', 'https://mixte-meet-app.netlify.app')}
+    ${BTN('Profiter de mon Premium', 'https://mixte-meet-webapp.onrender.com')}
   `);
   return sendEmail({ to, subject: `⭐ Premium activé sur Mixte-Meet !`, html });
 }
@@ -168,14 +168,14 @@ async function sendPremiumExpiring({ to, firstName, daysLeft, planName }) {
       <p style="margin:0;font-size:36px;">⏰</p>
       <p style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.65);">Plus que <strong style="color:#F59E0B;">${daysLeft} jours</strong> de Premium</p>
     </div>
-    ${BTN('Renouveler mon abonnement', 'https://mixte-meet-app.netlify.app')}
+    ${BTN('Renouveler mon abonnement', 'https://mixte-meet-webapp.onrender.com')}
   `);
   return sendEmail({ to, subject: `⏰ Ton Premium Mixte-Meet expire dans ${daysLeft} jours`, html });
 }
 
 // 6. Reset mot de passe
 async function sendPasswordReset({ to, firstName, resetToken }) {
-  const resetUrl = `https://mixte-meet-app.netlify.app/reset-password?token=${resetToken}`;
+  const resetUrl = `https://mixte-meet-webapp.onrender.com/reset-password?token=${resetToken}`;
   const html = baseTemplate(`
     ${H1(`Réinitialisation de mot de passe 🔐`)}
     ${P(`Bonjour ${firstName}, tu as demandé à réinitialiser ton mot de passe Mixte-Meet.`)}
@@ -197,3 +197,4 @@ module.exports = {
   sendPremiumExpiring,
   sendPasswordReset,
 };
+
