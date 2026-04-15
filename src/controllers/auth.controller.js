@@ -74,5 +74,6 @@ async function logout(req, res) {
   return res.json({ success: true, message: 'Déconnexion réussie' });
 }
 
-module.exports = { register, login, refresh, changePassword, logout, forgotPassword };
+module.exports = { register, login, refresh, changePassword, logout, forgotPassword, resetPassword };
+
 
