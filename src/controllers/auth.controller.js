@@ -75,3 +75,4 @@ async function logout(req, res) {
 }
 
 module.exports = { register, login, refresh, changePassword, logout, forgotPassword };
+
