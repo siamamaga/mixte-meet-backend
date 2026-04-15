@@ -51,28 +51,12 @@ async function forgotPassword(req, res) {
   const { email } = req.body;
   if (!email) return res.status(400).json({ success: false, message: 'Email requis' });
   try {
-    const pool = require('../config/database');
-    const [users] = await pool.query('SELECT id, first_name FROM users WHERE email = ? AND status = ?', [email, 'active']);
-    if (!users.length) return res.json({ success: true, message: 'Si cet email existe, vous recevrez un lien.' });
-    const user = users[0];
     const resetToken = require('crypto').randomBytes(32).toString('hex');
-    const expires = new Date(Date.now() + 3600000); // 1 heure
-    await pool.query('UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?', [resetToken, expires, user.id]);
-    try {
-  await emailService.sendPasswordReset({
-    to: email,
-    firstName: user.first_name,
-    resetToken,
-  });
-  console.log('Reset email envoye a:', email);
-} catch(emailErr) {
-  console.error('ERREUR EMAIL:', emailErr.message);
-}
-return res.json({ success: true, message: 'Email de réinitialisation envoyé' });
-      console.log('Reset email envoye a:', email);
-    } catch(emailErr) {
-      console.error('ERREUR EMAIL:', emailErr.message);
-    }
+    await emailService.sendPasswordReset({
+      to:         email,
+      firstName:  'cher(e) membre',
+      resetToken,
+    });
     return res.json({ success: true, message: 'Email de réinitialisation envoyé' });
   } catch (err) { handleError(res, err); }
 }
@@ -90,20 +74,4 @@ async function logout(req, res) {
   return res.json({ success: true, message: 'Déconnexion réussie' });
 }
 
-async function resetPassword(req, res) {
-  const { token, password } = req.body;
-  if (!token || !password) return res.status(400).json({ success: false, message: 'Token et mot de passe requis' });
-  try {
-    const pool = require('../config/database');
-    const [users] = await pool.query('SELECT id FROM users WHERE reset_token = ? AND reset_token_expires > NOW()', [token]);
-    if (!users.length) return res.status(400).json({ success: false, message: 'Token invalide ou expiré' });
-    const bcrypt = require('bcryptjs');
-    const hash = await bcrypt.hash(password, 12);
-    await pool.query('UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?', [hash, users[0].id]);
-    return res.json({ success: true, message: 'Mot de passe mis à jour' });
-  } catch (err) { handleError(res, err); }
-}
-module.exports = { register, login, refresh, changePassword, logout, forgotPassword, resetPassword };
-
-
-
+module.exports = { register, login, refresh, changePassword, logout, forgotPassword };
