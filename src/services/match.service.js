@@ -155,3 +155,4 @@ async function getMatches(userId) {
 module.exports = { getFeed, swipe: recordSwipe, undoLastSwipe: async (userId) => { const [last] = await pool.query('SELECT id FROM swipes WHERE swiper_id = ? ORDER BY created_at DESC LIMIT 1', [userId]); if (!last.length) throw { status: 404, message: 'Aucun swipe a annuler' }; await pool.query('DELETE FROM swipes WHERE id = ?', [last[0].id]); return { message: 'Dernier swipe annule' }; }, getMatches };
 
 
+

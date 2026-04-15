@@ -34,6 +34,7 @@ router.post('/auth/refresh',                              authCtrl.refresh);
 router.post('/auth/logout',           authMiddleware,     authCtrl.logout);
 router.put ('/auth/change-password',  authMiddleware,     authCtrl.changePassword);
 router.post('/auth/forgot-password',                      authCtrl.forgotPassword);
+router.post('/auth/reset-password',                       authCtrl.resetPassword);
 
 // ════════════════════════════════════════════════
 // 👤 PROFIL
@@ -167,6 +168,7 @@ router.get('/health', (req, res) => res.json({
 }));
 
 module.exports = router;
+
 
 
 
