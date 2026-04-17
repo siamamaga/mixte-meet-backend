@@ -138,6 +138,12 @@ router.get('/admin/verifications',      authMiddleware, adminOnly, adminCtrl.get
 router.put('/admin/verifications/:id',  authMiddleware, adminOnly, adminCtrl.handleVerification);
 
 // ════════════════════════════════════════════════
+// 💳 PAIEMENTS
+const payCtrl = require('../controllers/payment.controller');
+router.get ('/plans',                    authMiddleware, payCtrl.getPlans);
+router.post('/payment/create',           authMiddleware, payCtrl.createPayment);
+router.post('/payment/webhook/fedapay',  payCtrl.webhook);
+// ════════════════════════════════════════════════
 // 💓 HEALTH CHECK
 // ════════════════════════════════════════════════
 router.get('/ping', async (req, res) => {
@@ -181,6 +187,7 @@ router.get('/health', (req, res) => res.json({
 }));
 
 module.exports = router;
+
 
 
 
