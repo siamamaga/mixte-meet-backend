@@ -51,16 +51,21 @@ async function forgotPassword(req, res) {
   const { email } = req.body;
   if (!email) return res.status(400).json({ success: false, message: 'Email requis' });
   try {
+    const pool = require('../config/database');
+    const [users] = await pool.query('SELECT id, first_name FROM users WHERE email = ? AND status = "active"', [email]);
+    if (!users.length) return res.json({ success: true, message: 'Email de reinitialisation envoye' });
+    const user = users[0];
     const resetToken = require('crypto').randomBytes(32).toString('hex');
-    await emailService.sendPasswordReset({
-      to:         email,
-      firstName:  'cher(e) membre',
-      resetToken,
-    });
-    return res.json({ success: true, message: 'Email de réinitialisation envoyé' });
+    const expires = new Date(Date.now() + 3600000);
+    await pool.query('UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?', [resetToken, expires, user.id]);
+    try {
+      await emailService.sendPasswordReset({ to: email, firstName: user.first_name, resetToken });
+    } catch(emailErr) {
+      console.error('ERREUR EMAIL:', emailErr.message);
+    }
+    return res.json({ success: true, message: 'Email de reinitialisation envoye' });
   } catch (err) { handleError(res, err); }
 }
-
 // POST /api/auth/change-password
 async function changePassword(req, res) {
   try {
