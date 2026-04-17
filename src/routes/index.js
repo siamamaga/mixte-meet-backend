@@ -141,6 +141,8 @@ router.put('/admin/verifications/:id',  authMiddleware, adminOnly, adminCtrl.han
 // 💓 HEALTH CHECK
 // ════════════════════════════════════════════════
 router.get('/ping', async (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.set('Pragma', 'no-cache');
   try {
     const auth = req.headers.authorization;
     if (auth && auth.startsWith('Bearer ')) {
@@ -179,6 +181,7 @@ router.get('/health', (req, res) => res.json({
 }));
 
 module.exports = router;
+
 
 
 
