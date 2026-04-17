@@ -14,20 +14,9 @@ const pool = mysql.createPool({
   timezone:           '+00:00',
 });
 
-// Test de connexion au démarrage
-async function testConnection() {
-  try {
-    const conn = await pool.getConnection();
-    console.log('✅ Base de données connectée — mixte_meet');
-    conn.release();
-  } catch (err) {
-    console.error('❌ Erreur connexion DB :', err.message);
-    process.exit(1);
-  }
-}
-
-testConnection();
+// Test silencieux sans bloquer le demarrage
+pool.query('SELECT 1')
+  .then(() => console.log('✅ Base de données connectée — mixte_meet'))
+  .catch(err => console.error('⚠️ DB warning:', err.message));
 
 module.exports = pool;
-
-
