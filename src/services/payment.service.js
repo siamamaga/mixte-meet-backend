@@ -1,5 +1,5 @@
 // src/services/payment.service.js
-const FedaPay = require('fedapay');
+const { FedaPay, Transaction } = require('fedapay');
 
 FedaPay.setApiKey(process.env.FEDAPAY_SECRET_KEY);
 FedaPay.setEnvironment('live');
@@ -16,7 +16,7 @@ const PLANS = {
 async function createTransaction({ userId, planId, userEmail, userName, phone }) {
   const plan = PLANS[planId];
   if (!plan) throw { status: 400, message: 'Plan invalide' };
-  const transaction = await FedaPay.Transaction.create({
+  const transaction = await Transaction.create({
     description: `Mixte-Meet - ${plan.label}`,
     amount: plan.amount,
     currency: { iso: plan.currency },
@@ -59,3 +59,4 @@ async function handleWebhook(payload) {
 }
 
 module.exports = { createTransaction, handleWebhook, PLANS };
+
