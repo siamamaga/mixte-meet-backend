@@ -8,7 +8,7 @@ const pool = mysql.createPool({
   password:           process.env.DB_PASSWORD || '',
   database:           process.env.DB_NAME     || 'mixte_meet',
   waitForConnections: true,
-  connectionLimit:    10,
+  connectionLimit:    5,
   queueLimit:         0,
   charset:            'utf8mb4',
   timezone:           '+00:00',
@@ -29,3 +29,4 @@ async function testConnection() {
 testConnection();
 
 module.exports = pool;
+
