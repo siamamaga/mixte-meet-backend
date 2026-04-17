@@ -15,7 +15,7 @@ async function authMiddleware(req, res, next) {
 
     // Vérifier que l'utilisateur existe et est actif
     const [rows] = await pool.query(
-      'SELECT id, uuid, email, role, status, is_premium, coins FROM users WHERE id = ? AND status = "active"',
+      'SELECT id, uuid, email, role, status, is_premium, coins, last_active_at FROM users WHERE id = ? AND status = "active"',
       [decoded.id]
     );
 
@@ -23,7 +23,11 @@ async function authMiddleware(req, res, next) {
       return res.status(401).json({ success: false, message: 'Utilisateur introuvable ou suspendu' });
     }
 
-    req.user = rows[0];
+  req.user = rows[0];
+    const la = rows[0].last_active_at ? new Date(rows[0].last_active_at) : null;
+    if (!la || (Date.now() - la) > 30000) {
+      pool.query('UPDATE users SET last_active_at = NOW() WHERE id = ?', [rows[0].id]).catch(() => {});
+    }
     next();
   } catch (err) {
     if (err.name === 'TokenExpiredError') {
