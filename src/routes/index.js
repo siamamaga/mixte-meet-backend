@@ -140,7 +140,18 @@ router.put('/admin/verifications/:id',  authMiddleware, adminOnly, adminCtrl.han
 // ════════════════════════════════════════════════
 // 💓 HEALTH CHECK
 // ════════════════════════════════════════════════
-router.get('/ping', (req, res) => res.send('ok'));
+router.get('/ping', async (req, res) => {
+  try {
+    const auth = req.headers.authorization;
+    if (auth && auth.startsWith('Bearer ')) {
+      const jwt = require('jsonwebtoken');
+      const pool = require('../config/database');
+      const decoded = jwt.verify(auth.split(' ')[1], process.env.JWT_SECRET);
+      await pool.query('UPDATE users SET last_active_at = NOW() WHERE id = ?', [decoded.id]);
+    }
+  } catch(e) {}
+  res.send('ok');
+});
 router.delete('/swipes/reset', authMiddleware, async (req, res) => {
   try {
     const pool = require('../config/database');
@@ -168,6 +179,7 @@ router.get('/health', (req, res) => res.json({
 }));
 
 module.exports = router;
+
 
 
 
