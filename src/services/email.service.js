@@ -175,7 +175,7 @@ async function sendPremiumExpiring({ to, firstName, daysLeft, planName }) {
 
 // 6. Reset mot de passe
 async function sendPasswordReset({ to, firstName, resetToken }) {
-  const resetUrl = `https://mixte-meet-webapp.onrender.com/reset-password?token=${resetToken}`;
+  const resetUrl = `https://mixte-meet-webapp.onrender.com/reset-password.html?token=${resetToken}`;
   const html = baseTemplate(`
     ${H1(`Réinitialisation de mot de passe 🔐`)}
     ${P(`Bonjour ${firstName}, tu as demandé à réinitialiser ton mot de passe Mixte-Meet.`)}
@@ -197,4 +197,5 @@ module.exports = {
   sendPremiumExpiring,
   sendPasswordReset,
 };
+
 
