@@ -2,7 +2,7 @@
 const { FedaPay, Transaction } = require('fedapay');
 
 FedaPay.setApiKey(process.env.FEDAPAY_SECRET_KEY);
-FedaPay.setEnvironment('live');
+FedaPay.setEnvironment('sandbox');
 
 const PLANS = {
   weekly:              { amount: 3500,  currency: 'XOF', label: 'Premium 1 semaine',    days: 7   },
@@ -62,5 +62,6 @@ async function handleWebhook(payload) {
 }
 
 module.exports = { createTransaction, handleWebhook, PLANS };
+
 
 
