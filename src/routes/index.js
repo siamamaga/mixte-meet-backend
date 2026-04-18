@@ -164,6 +164,10 @@ router.get ('/plans',                    authMiddleware, payCtrl.getPlans);
 router.post('/payment/create',           authMiddleware, payCtrl.createPayment);
 router.post('/payment/webhook/fedapay',  payCtrl.webhook);
 // ════════════════════════════════════════════════
+// 📹 SIGNALING VIDEO
+const signalingRouter = require('./signaling');
+router.use('/call', authMiddleware, signalingRouter);
+// ════════════════════════════════════════════════
 // 💓 HEALTH CHECK
 // ════════════════════════════════════════════════
 router.get('/ping', async (req, res) => {
@@ -207,6 +211,7 @@ router.get('/health', (req, res) => res.json({
 }));
 
 module.exports = router;
+
 
 
 
