@@ -5,9 +5,12 @@ FedaPay.setApiKey(process.env.FEDAPAY_SECRET_KEY);
 FedaPay.setEnvironment('live');
 
 const PLANS = {
-  premium_monthly:     { amount: 2500,  currency: 'XOF', label: 'Premium Mensuel',      days: 30  },
+  weekly:              { amount: 3500,  currency: 'XOF', label: 'Premium 1 semaine',    days: 7   },
+  monthly:             { amount: 6930,  currency: 'XOF', label: 'Premium 1 mois',       days: 30  },
+  yearly:              { amount: 53433, currency: 'XOF', label: 'Premium 1 an',         days: 365 },
+  premium_monthly:     { amount: 6930,  currency: 'XOF', label: 'Premium Mensuel',      days: 30  },
   premium_quarterly:   { amount: 6500,  currency: 'XOF', label: 'Premium Trimestriel',  days: 90  },
-  premium_yearly:      { amount: 20000, currency: 'XOF', label: 'Premium Annuel',        days: 365 },
+  premium_yearly:      { amount: 53433, currency: 'XOF', label: 'Premium Annuel',        days: 365 },
   coins_100:           { amount: 1000,  currency: 'XOF', label: '100 Coins',             coins: 100 },
   coins_500:           { amount: 4000,  currency: 'XOF', label: '500 Coins',             coins: 500 },
   coins_1000:          { amount: 7000,  currency: 'XOF', label: '1000 Coins',            coins: 1000 },
@@ -59,4 +62,5 @@ async function handleWebhook(payload) {
 }
 
 module.exports = { createTransaction, handleWebhook, PLANS };
+
 
