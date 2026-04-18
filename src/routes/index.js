@@ -139,22 +139,16 @@ router.put('/admin/verifications/:id',  authMiddleware, adminOnly, adminCtrl.han
 
 // ════════════════════════════════════════════════
 // 👁 QUI M'A LIKE
-router.get('/who-liked-me', authMiddleware, async (req, res) => {
-  try {
-    const pool = require('../config/database');
-    const user = req.user;
-    if (!user.is_premium) return res.status(403).json({ success: false, message: 'Premium requis' });
-    const [rows] = await pool.query(
-      SELECT u.uuid, u.first_name, u.country_name, u.country_code,
-             p.url as main_photo, s.action, s.created_at
-      FROM swipes s
-      JOIN users u ON u.id = s.swiper_id
-      LEFT JOIN photos p ON p.user_id = u.id AND p.is_main = 1
-      WHERE s.swiped_id = ? AND s.action IN ('like','super_like')
-      ORDER BY s.created_at DESC LIMIT 50
-    , [user.id]);
-    res.json({ success: true, data: rows });
-  } catch(err) { res.status(500).json({ success: false, message: err.message }); }
+const [rows] = await pool.query(
+      `SELECT u.uuid, u.first_name, u.country_name, u.country_code,
+              p.url as main_photo, s.action, s.created_at
+       FROM swipes s
+       JOIN users u ON u.id = s.swiper_id
+       LEFT JOIN photos p ON p.user_id = u.id AND p.is_main = 1
+       WHERE s.swiped_id = ? AND s.action IN ('like','super_like')
+       ORDER BY s.created_at DESC LIMIT 50`,
+      [user.id]
+    );
 });
 // ════════════════════════════════════════════════
 // 💳 PAIEMENTS
