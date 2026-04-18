@@ -139,7 +139,12 @@ router.put('/admin/verifications/:id',  authMiddleware, adminOnly, adminCtrl.han
 
 // ════════════════════════════════════════════════
 // 👁 QUI M'A LIKE
-const [rows] = await pool.query(
+router.get('/who-liked-me', authMiddleware, async (req, res) => {
+  try {
+    const pool = require('../config/database');
+    const user = req.user;
+    if (!user.is_premium) return res.status(403).json({ success: false, message: 'Premium requis' });
+    const [rows] = await pool.query(
       `SELECT u.uuid, u.first_name, u.country_name, u.country_code,
               p.url as main_photo, s.action, s.created_at
        FROM swipes s
@@ -149,6 +154,8 @@ const [rows] = await pool.query(
        ORDER BY s.created_at DESC LIMIT 50`,
       [user.id]
     );
+    res.json({ success: true, data: rows });
+  } catch(err) { res.status(500).json({ success: false, message: err.message }); }
 });
 // ════════════════════════════════════════════════
 // 💳 PAIEMENTS
@@ -200,6 +207,7 @@ router.get('/health', (req, res) => res.json({
 }));
 
 module.exports = router;
+
 
 
 
