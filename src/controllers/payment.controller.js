@@ -21,8 +21,8 @@ exports.createPayment = async (req, res) => {
     });
     res.json({ success: true, data: result });
   } catch(err) {
-    console.error('PAYMENT ERROR:', JSON.stringify(err));
-    res.status(err.status || 500).json({ success: false, message: err.message });
+    console.error('PAYMENT ERROR:', err.message || err);
+    res.status(err.status || 500).json({ success: false, message: err.message || 'Erreur paiement' });
   }
 };
 
@@ -35,4 +35,5 @@ exports.webhook = async (req, res) => {
     res.status(500).json({ success: false });
   }
 };
+
 
