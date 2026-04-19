@@ -46,15 +46,14 @@ async function getMessages(conversationId, userId, page = 1, limit = 30) {
 async function sendMessage(conversationId, senderId, { type = 'text', content, media_url, voice_url, duration_sec, duration, is_ephemeral = false }) {
   await checkAccess(conversationId, senderId);
 
-  if (!content && !media_url) throw { status: 400, message: 'Contenu ou média requis' };
+  if (!content && !media_url && !voice_url) throw { status: 400, message: 'Contenu ou média requis' };
 
   const expires_at = is_ephemeral ? new Date(Date.now() + 24 * 3600 * 1000) : null;
 
   const [result] = await pool.query(`
-    INSERT INTO messages (conversation_id, sender_id, type, content, media_url, duration_sec, is_ephemeral, expires_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `, [conversationId, senderId, type, content || null, media_url || null, duration_sec || null, is_ephemeral, expires_at]);
-
+   INSERT INTO messages (conversation_id, sender_id, type, content, media_url, voice_url, duration_sec, duration, is_ephemeral, expires_at) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `, [conversationId, senderId, type, content || null, media_url || null, voice_url || null, duration_sec || null, duration || null, is_ephemeral, expires_at]);
   // Mettre à jour last_message_at de la conversation
   await pool.query('UPDATE conversations SET last_message_at = NOW() WHERE id = ?', [conversationId]);
 
