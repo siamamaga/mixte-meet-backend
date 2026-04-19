@@ -43,7 +43,7 @@ async function getMessages(conversationId, userId, page = 1, limit = 30) {
 }
 
 // ── Envoyer un message (texte / média) ───────────────────
-async function sendMessage(conversationId, senderId, { type = 'text', content, media_url, duration_sec, is_ephemeral = false }) {
+async function sendMessage(conversationId, senderId, { type = 'text', content, media_url, voice_url, duration_sec, duration, is_ephemeral = false }) {
   await checkAccess(conversationId, senderId);
 
   if (!content && !media_url) throw { status: 400, message: 'Contenu ou média requis' };
@@ -93,4 +93,5 @@ async function addReaction(messageId, userId, emoji) {
 }
 
 module.exports = { getMessages, sendMessage, deleteMessage, addReaction };
+
 
