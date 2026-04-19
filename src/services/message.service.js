@@ -18,7 +18,7 @@ async function getMessages(conversationId, userId, page = 1, limit = 30) {
   const offset = (page - 1) * limit;
   const [messages] = await pool.query(`
     SELECT
-      m.id, m.type, m.content, m.media_url, m.duration_sec,
+      m.id, m.type, m.content, m.media_url, m.voice_url, m.duration, m.duration_sec,
       m.is_ephemeral, m.expires_at, m.is_read, m.read_at,
       m.created_at,
       u.uuid AS sender_uuid, u.first_name AS sender_name,
