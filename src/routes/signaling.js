@@ -28,4 +28,20 @@ router.get('/:convId/signal', async (req, res) => {
   res.json({ success: true, data: mySignals });
 });
 
+// Vérifier si l'utilisateur a un appel entrant
+router.get('/incoming', async (req, res) => {
+  const userId = req.user.id;
+  // Chercher dans tous les signaux en mémoire un 'offer' destiné à cet utilisateur
+  for (const convId in signals) {
+    const pending = signals[convId].filter(s => s.to === userId && s.type === 'offer' && (Date.now() - s.ts) < 30000);
+    if (pending.length > 0) {
+      // Consommer le signal
+      signals[convId] = signals[convId].filter(s => !(s.to === userId && s.type === 'offer'));
+      return res.json({ success: true, data: { signal: pending[0], convId: parseInt(convId) } });
+    }
+  }
+  res.json({ success: true, data: null });
+});
+
 module.exports = router;
+
