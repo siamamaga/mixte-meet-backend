@@ -1,12 +1,12 @@
 // src/routes/turn.js
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middlewares/auth');
+const { authMiddleware } = require('../middlewares/auth');
 
 router.get('/credentials', authMiddleware, async (req, res) => {
   try {
-    const appName = process.env.mixtemeet2026;
-    const secretKey = process.env.lmIvy2yDvJfjt43TOwSeidpY3n381GDJWazJ7I1KypdJf8IR;
+    const appName = process.env.METERED_APP_NAME;
+    const secretKey = process.env.METERED_SECRET_KEY;
     const url = `https://${appName}.metered.live/api/v1/turn/credentials?apiKey=${secretKey}`;
     const response = await fetch(url);
     const iceServers = await response.json();
