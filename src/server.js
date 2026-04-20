@@ -1,6 +1,5 @@
 // src/server.js  — Point d'entrée Mixte-Meet Backend
 require('dotenv').config();
-
 const express    = require('express');
 const http       = require('http');
 const { Server } = require('socket.io');
@@ -8,7 +7,6 @@ const cors       = require('cors');
 const helmet     = require('helmet');
 const morgan     = require('morgan');
 const rateLimit  = require('express-rate-limit');
-
 const routes          = require('./routes/index');
 const { initSocket }  = require('./sockets/chat.socket');
 
@@ -35,18 +33,32 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Rate limiting global
+// ── Rate limiting global — routes légères exclues ─────────
 app.use(rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max:      200,
-  message:  { success: false, message: 'Trop de requêtes. Réessayez dans 15 minutes.' },
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 3000,
+  message: { success: false, message: 'Trop de requêtes. Réessayez dans 1 minute.' },
+  skip: function(req) {
+    var p = req.path;
+    return (
+      p.includes('/ping')         ||
+      p.includes('/call')         ||
+      p.includes('/signal')       ||
+      p.includes('/incoming')     ||
+      p.includes('/conversations')||
+      p.includes('/messages')     ||
+      p.includes('/matches')      ||
+      p.includes('/notifications')||
+      p.includes('/me')
+    );
+  }
 }));
 
-// Rate limiting strict sur auth
+// ── Rate limiting strict sur auth ─────────────────────────
 app.use('/api/auth', rateLimit({
   windowMs: 15 * 60 * 1000,
-  max:      10,
-  message:  { success: false, message: 'Trop de tentatives de connexion.' },
+  max: 10,
+  message: { success: false, message: 'Trop de tentatives de connexion.' },
 }));
 
 // ── Routes API ────────────────────────────────────────────
@@ -56,7 +68,6 @@ app.use('/api', routes);
 app.use((req, res) => {
   res.status(404).json({ success: false, message: `Route introuvable : ${req.method} ${req.path}` });
 });
-
 app.use((err, req, res, next) => {
   console.error('💥 Erreur non gérée:', err);
   res.status(500).json({ success: false, message: 'Erreur serveur interne' });
@@ -75,9 +86,3 @@ server.listen(PORT, () => {
 });
 
 module.exports = { app, server };
-
-
-
-
-
-
