@@ -164,6 +164,10 @@ router.get ('/plans',                    authMiddleware, payCtrl.getPlans);
 router.post('/payment/create',           authMiddleware, payCtrl.createPayment);
 router.post('/payment/webhook/fedapay',  payCtrl.webhook);
 // ════════════════════════════════════════════════
+// 🔄 TURN CREDENTIALS
+const turnRouter = require('./turn');
+router.use('/turn', turnRouter);
+// ════════════════════════════════════════════════
 // 📹 SIGNALING VIDEO
 const signalingRouter = require('./signaling');
 router.use('/call', authMiddleware, signalingRouter);
@@ -211,6 +215,7 @@ router.get('/health', (req, res) => res.json({
 }));
 
 module.exports = router;
+
 
 
 
