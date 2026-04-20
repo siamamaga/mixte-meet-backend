@@ -131,6 +131,7 @@ async function getMatches(userId) {
       m.id AS match_id,
       c.id AS conversation_id,
       CASE WHEN m.user1_id = ? THEN u2.uuid     ELSE u1.uuid     END AS uuid,
+      CASE WHEN m.user1_id = ? THEN u2.id ELSE u1.id END AS partner_id,
       CASE WHEN m.user1_id = ? THEN u2.first_name ELSE u1.first_name END AS first_name,
       CASE WHEN m.user1_id = ? THEN u2.country_code ELSE u1.country_code END AS country_code,
       CASE WHEN m.user1_id = ? THEN u2.last_active_at ELSE u1.last_active_at END AS last_active_at,
@@ -153,6 +154,8 @@ async function getMatches(userId) {
 }
 
 module.exports = { getFeed, swipe: recordSwipe, undoLastSwipe: async (userId) => { const [last] = await pool.query('SELECT id FROM swipes WHERE swiper_id = ? ORDER BY created_at DESC LIMIT 1', [userId]); if (!last.length) throw { status: 404, message: 'Aucun swipe a annuler' }; await pool.query('DELETE FROM swipes WHERE id = ?', [last[0].id]); return { message: 'Dernier swipe annule' }; }, getMatches };
+
+
 
 
 
