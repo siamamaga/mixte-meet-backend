@@ -1,5 +1,6 @@
 // src/services/message.service.js
 const pool = require('../config/database');
+const notifSvc = require('./notification.service');
 
 // ── Vérifier l'accès à une conversation ──────────────────
 async function checkAccess(conversationId, userId) {
@@ -56,6 +57,16 @@ async function sendMessage(conversationId, senderId, { type = 'text', content, m
   `, [conversationId, senderId, type, content || null, media_url || null, voice_url || null, duration_sec || null, duration || null, is_ephemeral, expires_at]);
   // Mettre à jour last_message_at de la conversation
   await pool.query('UPDATE conversations SET last_message_at = NOW() WHERE id = ?', [conversationId]);
+  // Notifier le destinataire
+  try {
+    const [conv] = await pool.query('SELECT m.user1_id, m.user2_id FROM conversations c JOIN matches m ON m.id = c.match_id WHERE c.id = ?', [conversationId]);
+    if (conv.length) {
+      const receiverId = conv[0].user1_id === senderId ? conv[0].user2_id : conv[0].user1_id;
+      const [sender] = await pool.query('SELECT first_name FROM users WHERE id = ?', [senderId]);
+      const senderName = sender.length ? sender[0].first_name : 'Quelqu\'un';
+      notifSvc.sendMessageNotif(receiverId, senderName, content || '[Message vocal]').catch(() => {});
+    }
+  } catch(e) {}
 
   const [msg] = await pool.query(`
     SELECT m.*, u.first_name AS sender_name, u.uuid AS sender_uuid
@@ -92,5 +103,6 @@ async function addReaction(messageId, userId, emoji) {
 }
 
 module.exports = { getMessages, sendMessage, deleteMessage, addReaction };
+
 
 
