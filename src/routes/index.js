@@ -164,6 +164,10 @@ router.get ('/plans',                    authMiddleware, payCtrl.getPlans);
 router.post('/payment/create',           authMiddleware, payCtrl.createPayment);
 router.post('/payment/webhook/fedapay',  payCtrl.webhook);
 // ════════════════════════════════════════════════
+// 🔔 PUSH NOTIFICATIONS
+const pushRouter = require('./push');
+router.use('/push', pushRouter);
+// ════════════════════════════════════════════════
 // 🔄 TURN CREDENTIALS
 const turnRouter = require('./turn');
 router.use('/turn', turnRouter);
@@ -215,6 +219,7 @@ router.get('/health', (req, res) => res.json({
 }));
 
 module.exports = router;
+
 
 
 
